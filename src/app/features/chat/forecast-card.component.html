@@ -1,0 +1,148 @@
+<article
+  class="forecast-card"
+  [class.expired-card]="expired()"
+  [attr.aria-label]="'Прогноз станции ' + card().station"
+>
+  @if (card().status === 'loading') {
+    <div class="forecast-card-heading">
+      <h2>{{ card().station }} <span class="muted">Готовим прогноз</span></h2>
+      <span class="loading-dot" role="status" aria-label="Загрузка"></span>
+    </div>
+    <div class="skeleton skeleton-value"></div>
+    <div class="skeleton skeleton-chart"></div>
+    <div class="skeleton skeleton-line"></div>
+    <div class="skeleton skeleton-line short"></div>
+  } @else if (card().status === 'error') {
+    <div class="forecast-card-heading">
+      <h2>{{ card().station }}</h2>
+      <span class="badge danger">Недоступно</span>
+    </div>
+    @if (card().error; as error) {
+      <app-error-state [error]="error" [busy]="busy()" (retry)="refresh.emit()" />
+    }
+  } @else if (forecast(); as f) {
+    <div class="forecast-card-heading">
+      <div>
+        <h2>
+          <app-icon name="signal" />{{ f.station }}<span class="muted">{{ f.parameter }}</span>
+        </h2>
+        <p class="small muted">{{ roleLabel(f.role) }}</p>
+      </div>
+      <div class="freshness">
+        <span
+          class="badge"
+          [class.good]="!expired() && !stale()"
+          [class.warning]="stale()"
+          [class.danger]="expired()"
+          ><i class="status-dot"></i
+          >{{ expired() ? 'Устарел' : stale() ? 'С задержкой' : 'Актуальный' }}</span
+        ><span class="small muted" [title]="localTime(f.valid_until)"
+          >Актуально до
+          {{ f.valid_until ? (f.valid_until | date: 'HH:mm' : 'UTC') : '—' }} UTC</span
+        >
+      </div>
+    </div>
+    @if (historical()) {
+      <p class="historical-note">
+        Данные на момент запроса {{ f.generated_at | date: 'dd.MM.yyyy HH:mm' : 'UTC' }} UTC
+      </p>
+    }
+    @if (expired()) {
+      <div class="notice error">
+        <div>
+          <strong>Прогноз устарел</strong>
+          <p>Срок действия закончился. Запросите новые данные.</p>
+        </div>
+        <button class="secondary-button" [disabled]="busy()" (click)="refresh.emit()">
+          <app-icon name="refresh" /> Обновить
+        </button>
+      </div>
+    } @else {
+      @if (stale()) {
+        <div class="notice warning">
+          {{ freshnessMessage() }}
+        </div>
+      }
+      <div class="prediction-summary">
+        <div>
+          <span class="eyebrow">ПРОГНОЗ {{ f.parameter }}</span>
+          <p class="prediction-value">
+            {{ f.prediction | number: '1.2-3' }}<span>{{ f.unit === 'MHz' ? 'МГц' : f.unit }}</span>
+          </p>
+        </div>
+        <div class="target-info">
+          <span class="badge">+{{ f.horizon.replace('min', ' мин').replace('h', ' ч') }}</span>
+          <p [title]="localTime(f.forecast_timestamp)">
+            {{ f.forecast_timestamp | date: 'dd MMM, HH:mm' : 'UTC' : 'ru' }} UTC
+          </p>
+          <span class="small muted">{{ f.model }} · {{ f.model_version }}</span>
+        </div>
+      </div>
+      <app-chart-card [forecast]="f" />
+    }
+    <details class="data-details">
+      <summary>
+        Таблица наблюдений и прогноза <span class="muted">{{ f.table.rows.length }} строк</span>
+      </summary>
+      <app-data-table [forecast]="f" />
+    </details>
+    <section class="explanation-block">
+      <div class="section-heading">
+        <h3>
+          <span class="explain-symbol"><app-icon name="llm" /></span> Объяснение
+        </h3>
+        @if (explanation().status === 'streaming') {
+          <span class="small muted">Формируем ответ…</span>
+        }
+      </div>
+      @if (!explanationsEnabled) {
+        <p class="muted llm-disabled" role="status">
+          LLM не подключена. Текстовое объяснение пока недоступно.
+        </p>
+      } @else {
+        <div
+          aria-live="polite"
+          aria-atomic="false"
+          [attr.aria-busy]="explanation().status === 'streaming'"
+        >
+          <p class="explanation-text">
+            {{ explanation().text }}
+            @if (explanation().status === 'streaming') {
+              <span class="stream-cursor" aria-hidden="true"></span>
+            }
+          </p>
+        </div>
+        @if (explanation().error; as error) {
+          <div class="explanation-error">
+            <p>{{ error.message }}</p>
+            @if (!expired() && error.code === 'forecast_expired') {
+              <button class="text-button" [disabled]="busy()" (click)="refresh.emit()">
+                <app-icon name="refresh" /> Обновить прогноз
+              </button>
+            } @else if (!expired()) {
+              <button class="text-button" (click)="retryExplanation()">
+                <app-icon name="refresh" /> Повторить
+              </button>
+            }
+          </div>
+        }
+        @if (explanation().status === 'idle' && !explanation().text) {
+          <p class="muted">
+            {{
+              expired()
+                ? 'Объяснение для этого прогноза недоступно.'
+                : 'Объяснение не было сохранено.'
+            }}
+          </p>
+          @if (!expired()) {
+            <button class="text-button" (click)="retryExplanation()">Получить объяснение</button>
+          }
+        }
+      }
+      <p class="disclaimer">
+        Точечный прогноз без оценки неопределённости. Учитывайте ограничения модели при принятии
+        решений.
+      </p>
+    </section>
+  }
+</article>

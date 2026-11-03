@@ -1,0 +1,34 @@
+@import 'tailwindcss';
+@import '@angular/cdk/overlay-prebuilt.css';
+@import './fonts.css';
+@import './theme.css';
+@import './chat-layout.css';
+@import './reference.css';
+/* Shared typography; no remote or bundled Apple font files. */
+:root {
+  --font-sans:
+    'Geist Variable', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+    'Helvetica Neue', system-ui, 'Segoe UI', sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+html,
+body {
+  font-family: var(--font-sans);
+}
+button,
+input,
+textarea,
+select,
+optgroup {
+  font: inherit;
+}
+table {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+td[data-numeric],
+th[data-numeric],
+.numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

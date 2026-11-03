@@ -1,0 +1,71 @@
+<div
+  class="workspace"
+  [class.sidebar-collapsed]="!sidebarOpen()"
+  [class.empty-chat]="!history.active()"
+>
+  @if (sidebarOpen()) {
+    @if (mobile()) {
+      <button
+        class="drawer-backdrop"
+        aria-label="Закрыть боковую панель"
+        (click)="closeMobile()"
+      ></button>
+    }
+    <aside
+      class="sidebar"
+      [cdkTrapFocus]="mobile()"
+      [cdkTrapFocusAutoCapture]="mobile()"
+      aria-label="Боковая панель"
+    >
+      <app-sidebar
+        (closePanel)="mobile() ? closeMobile() : sidebarOpen.set(false)"
+        (clearRequested)="clear()"
+        (archiveRequested)="openArchive()"
+        (settingsRequested)="settings()"
+        (navigated)="closeMobile()"
+      />
+    </aside>
+  }
+  <div class="workspace-main">
+    @if (selection.value(); as current) {
+      <app-chat-header
+        [selection]="current"
+        [sidebarOpen]="sidebarOpen()"
+        (toggleSidebar)="toggleSidebar()"
+        (edit)="edit($event)"
+        (settings)="settings()"
+      />
+      <main class="chat-body" id="main-content">
+        @if (history.storageWarning() || selection.storageWarning()) {
+          <div class="notice warning storage-warning" role="status">
+            Браузер ограничил сохранение. Часть истории может не сохраниться после закрытия
+            страницы.
+          </div>
+        }
+        @if (history.active(); as entry) {
+          <app-feed
+            [entry]="entry"
+            [historical]="history.fromHistory()"
+            [busy]="chat.busy()"
+            (refresh)="refresh($event)"
+            (explanationSaved)="saveExplanation($event)"
+          />
+        } @else {
+          <section class="welcome-state">
+            <span class="welcome-symbol" aria-hidden="true"><app-icon name="wave" /></span>
+            <h1>Какой прогноз посмотрим?</h1>
+            <p class="welcome-description">Выберите станции и запросите прогноз ионосферы.</p>
+          </section>
+        }
+      </main>
+      <app-scroll-tools />
+      <app-composer-panel
+        [progress]="chat.progress()"
+        [selection]="current"
+        [busy]="chat.busy()"
+        (request)="request()"
+        (edit)="edit()"
+      />
+    }
+  </div>
+</div>

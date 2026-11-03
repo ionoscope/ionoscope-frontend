@@ -1,0 +1,164 @@
+<div class="wizard">
+  @if (!singleField()) {
+    <div class="wizard-progress" aria-label="Этапы настройки">
+      @for (label of ['Ваша роль', 'Станции', 'Параметр']; track label) {
+        <span
+          [class.current]="step() === $index"
+          [class.completed]="step() > $index"
+          [attr.aria-current]="step() === $index ? 'step' : null"
+          ><b>
+            @if (step() > $index) {
+              <app-icon name="check" />
+            } @else {
+              {{ $index + 1 }}
+            }</b
+          >{{ label }}</span
+        >
+      }
+    </div>
+    <p class="eyebrow">ШАГ {{ step() + 1 }} ИЗ 3</p>
+  }
+  @switch (step()) {
+    @case (0) {
+      <h1>Для какой задачи<br />вам нужен прогноз?</h1>
+      <p class="wizard-description">
+        Сохраним роль для будущих объяснений.<br />LLM пока не подключена. Роль можно изменить
+        позже.
+      </p>
+      <div class="role-grid" role="radiogroup" aria-label="Выберите роль">
+        @for (item of roles; track item.id) {
+          <button
+            class="choice-card role-card"
+            role="radio"
+            [id]="'role-' + item.id"
+            [attr.aria-checked]="role() === item.id"
+            [attr.tabindex]="role() === item.id || (role() === null && $first) ? 0 : -1"
+            [class.selected]="role() === item.id"
+            (click)="role.set(item.id)"
+            (keydown)="roleKey($event)"
+          >
+            <span class="role-symbol">{{ item.symbol }}</span
+            ><span class="choice-title">{{ item.label }}</span
+            ><span class="muted">{{ item.description }}</span
+            ><span class="choice-check">
+              @if (role() === item.id) {
+                <app-icon name="check" />
+              }
+            </span>
+          </button>
+        }
+      </div>
+    }
+    @case (1) {
+      <h1>Где наблюдаем<br />ионосферу?</h1>
+      <p class="wizard-description">
+        Выберите от одной до пяти станций. Для каждой<br />подготовим отдельный прогноз.
+      </p>
+      <label class="search-field"
+        ><app-icon name="search" /><input
+          #searchBox
+          type="search"
+          aria-label="Поиск станций"
+          placeholder="Код или название станции"
+          [value]="search()"
+          (input)="search.set(searchBox.value)"
+        /><span class="muted">{{ stations().length }}/5</span></label
+      >
+      <div class="station-list" cdkScrollable aria-label="Станции">
+        @for (station of filteredStations(); track station.code) {
+          <button
+            class="station-choice"
+            role="checkbox"
+            [attr.aria-checked]="stations().includes(station.code)"
+            [class.selected]="stations().includes(station.code)"
+            [disabled]="
+              (!station.active && !stations().includes(station.code)) ||
+              (stations().length >= 5 && !stations().includes(station.code))
+            "
+            (click)="toggle(station)"
+          >
+            <span class="checkbox">
+              @if (stations().includes(station.code)) {
+                <app-icon name="check" />
+              }</span
+            ><span class="station-code">{{ station.code }}</span
+            ><span class="station-name">{{ station.name }}</span
+            ><span class="station-status"
+              ><i [class.inactive]="!station.active"></i
+              >{{
+                !station.active
+                  ? 'Неактивна'
+                  : station.freshness_status === 'fresh'
+                    ? 'Свежие данные'
+                    : station.freshness_status === 'stale'
+                      ? 'С задержкой'
+                      : 'Нет прогноза'
+              }}</span
+            >
+          </button>
+        } @empty {
+          @if (!catalog.loading() && !catalog.error()) {
+            <p class="empty-small">Станции не найдены. Попробуйте другой запрос.</p>
+          }
+        }
+      </div>
+    }
+    @case (2) {
+      <h1>Что будем<br />прогнозировать?</h1>
+      <p class="wizard-description">
+        Выберите параметр ионосферы.<br />Список возможностей будет расширяться.
+      </p>
+      <div class="parameter-list" role="radiogroup" aria-label="Параметр прогноза">
+        @for (item of catalog.parameters(); track item.id) {
+          <button
+            class="choice-card parameter-choice"
+            role="radio"
+            [attr.aria-checked]="parameter() === item.id"
+            [class.selected]="parameter() === item.id"
+            [disabled]="!item.available"
+            (click)="parameter.set(item.id)"
+          >
+            <span class="parameter-symbol">{{ item.id }}</span
+            ><span
+              ><strong>{{ item.label }}</strong
+              ><span class="muted">{{ item.unit === 'MHz' ? 'МГц' : item.unit }}</span></span
+            >
+            @if (!item.available) {
+              <span class="badge">В разработке</span>
+            } @else {
+              <span class="choice-check"><app-icon name="check" /></span>
+            }
+          </button>
+        }
+      </div>
+    }
+  }
+  @if (catalog.loading()) {
+    <p class="muted" role="status">Загружаем станции и параметры…</p>
+  }
+  @if (catalog.error(); as error) {
+    <div class="notice error" role="alert">
+      {{ error.message }} <button class="text-button" (click)="catalog.load()">Повторить</button>
+    </div>
+  }
+  <div class="wizard-footer">
+    @if (singleField()) {
+      <button class="secondary-button" (click)="cancelled.emit()">Отмена</button>
+    } @else if (step() > 0) {
+      <button class="secondary-button" (click)="step.set(step() - 1)">Назад</button>
+    } @else if (editing()) {
+      <button class="secondary-button" (click)="cancelled.emit()">Отмена</button>
+    } @else {
+      <span class="muted wizard-note"><app-icon name="globe" /> Данные и время — в UTC</span>
+    }
+    <button
+      class="primary-button"
+      [disabled]="!canContinue() || catalog.loading()"
+      (click)="next()"
+    >
+      {{
+        singleField() ? 'Сохранить' : step() === 2 ? (editing() ? 'Сохранить' : 'Начать') : 'Далее'
+      }}<app-icon name="chevron" />
+    </button>
+  </div>
+</div>
