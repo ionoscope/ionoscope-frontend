@@ -15,12 +15,12 @@ import { IconComponent } from '../../shared/ui/icon.component';
       <div class="composer-toolbar">
         <button
           class="composer-settings"
-          (click)="edit.emit()"
+          (click)="edit.emit(undefined)"
           aria-label="Изменить параметры прогноза"
         >
           <app-icon name="plus" />
         </button>
-        <button class="composer-tool-chip" (click)="edit.emit()">
+        <button class="composer-tool-chip" (click)="edit.emit(1)" aria-label="Изменить станции">
           <app-icon name="globe" />{{ selection().stations.length }}
           {{ selection().stations.length === 1 ? 'станция' : 'станции' }}
         </button>
@@ -50,6 +50,6 @@ export class ComposerPanelComponent {
   readonly progress = input<number | null>(null);
   readonly busy = input(false);
   readonly request = output<void>();
-  readonly edit = output<void>();
+  readonly edit = output<number | undefined>();
   readonly roleLabel = roleLabel;
 }

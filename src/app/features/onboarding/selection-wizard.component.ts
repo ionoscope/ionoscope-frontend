@@ -1,7 +1,9 @@
 import { CdkScrollable } from '@angular/cdk/scrolling';
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -16,7 +18,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
 
 @Component({
   selector: 'app-selection-wizard',
-  imports: [IconComponent, CdkScrollable],
+  imports: [IconComponent, CdkScrollable, DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './selection-wizard.component.html',
 })
@@ -42,6 +44,10 @@ export class SelectionWizardComponent {
     this.parameter.set(initial?.parameter ?? 'foF2');
   });
   private readonly loading = this.catalog.load();
+  constructor() {
+    const refresh = setInterval(() => void this.catalog.load(), 30_000);
+    inject(DestroyRef).onDestroy(() => clearInterval(refresh));
+  }
   readonly filteredStations = computed(() => {
     const query = this.search().trim().toLocaleLowerCase('ru');
     return this.catalog

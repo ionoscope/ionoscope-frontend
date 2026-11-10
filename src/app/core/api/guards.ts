@@ -45,6 +45,8 @@ export function isStation(v: unknown): v is StationInfo {
     nullableNumber(v['lat']) &&
     nullableNumber(v['lon']) &&
     typeof v['active'] === 'boolean' &&
+    (v['forecast_available'] === undefined || typeof v['forecast_available'] === 'boolean') &&
+    (v['last_observation'] === undefined || nullableTime(v['last_observation'])) &&
     ['fresh', 'stale', 'expired', 'missing'].includes(String(v['freshness_status']))
   );
 }

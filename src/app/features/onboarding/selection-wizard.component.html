@@ -88,17 +88,33 @@
               >{{
                 !station.active
                   ? 'Неактивна'
-                  : station.freshness_status === 'fresh'
-                    ? 'Свежие данные'
-                    : station.freshness_status === 'stale'
-                      ? 'С задержкой'
-                      : 'Нет прогноза'
-              }}</span
-            >
+                  : station.forecast_available === false
+                    ? 'Станция работает · ожидаем данные для прогноза'
+                    : station.freshness_status === 'fresh'
+                      ? 'Прогноз готов'
+                      : station.freshness_status === 'stale'
+                        ? 'С задержкой'
+                        : 'Подготовка прогноза'
+              }}
+              @if (station.last_observation) {
+                <small>
+                  · Измерение
+                  {{ station.last_observation | date: 'dd.MM HH:mm' : 'UTC' }} UTC</small
+                >
+              }
+            </span>
           </button>
         } @empty {
           @if (!catalog.loading() && !catalog.error()) {
-            <p class="empty-small">Станции не найдены. Попробуйте другой запрос.</p>
+            @if (catalog.stations().length) {
+              <p class="empty-small">Станции не найдены. Попробуйте другой запрос.</p>
+            } @else {
+              <p class="empty-small" role="status">
+                Сейчас нет станций с подтверждёнными свежими измерениями. Ожидаем обновление. Список
+                обновляется автоматически каждые 30 секунд.
+              </p>
+              <button type="button" (click)="catalog.load()">Обновить сейчас</button>
+            }
           }
         }
       </div>

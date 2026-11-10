@@ -60,6 +60,8 @@ export interface StationInfo {
   lat: number | null;
   lon: number | null;
   active: boolean;
+  forecast_available?: boolean;
+  last_observation?: string | null;
   freshness_status: FreshnessStatus | 'missing';
   mock?: boolean;
 }
