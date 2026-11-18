@@ -47,6 +47,12 @@ export class ForecastCardComponent {
   private readonly service = inject(ExplainStreamService);
   private readonly destroy = inject(DestroyRef);
   readonly forecast = computed(() => this.card().forecast);
+  readonly observationAge = computed(() => {
+    const f = this.forecast();
+    if (!f?.observation_timestamp) return null;
+    const at = this.historical() ? Date.parse(f.generated_at) : this.now();
+    return Math.max(0, (at - Date.parse(f.observation_timestamp)) / 60000);
+  });
   readonly expired = computed(() => {
     const f = this.forecast();
     return (

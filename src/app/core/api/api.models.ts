@@ -42,6 +42,19 @@ export interface ForecastResponse {
   forecast_interval_start: string | null;
   forecast_timestamp: string | null;
   observation_timestamp: string | null;
+  observation_age_minutes?: number | null;
+  observation_age_at_generation_minutes?: number | null;
+  observation_quality?: {
+    window_start: string;
+    window_end: string;
+    step_minutes: number;
+    expected_intervals: number;
+    available_intervals: number;
+    missing_intervals: number;
+    coverage_percent: number;
+    longest_gap_minutes: number;
+    trailing_gap_minutes: number;
+  } | null;
   generated_at: string;
   model: string;
   model_version: string;

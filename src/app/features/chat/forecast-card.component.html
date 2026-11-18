@@ -47,6 +47,29 @@
         Данные на момент запроса {{ f.generated_at | date: 'dd.MM.yyyy HH:mm' : 'UTC' }} UTC
       </p>
     }
+    @if (f.observation_timestamp) {
+      <p class="small muted">
+        Измерение: {{ f.observation_timestamp | date: 'dd.MM.yyyy HH:mm' : 'UTC' }} UTC · возраст
+        {{ observationAge() | number: '1.0-1' }} мин
+        {{ historical() ? 'на момент расчёта' : 'сейчас' }}
+      </p>
+    }
+    @if (f.observation_quality; as quality) {
+      <p class="small muted">
+        За 24 часа перед расчётом: {{ quality.available_intervals }}/{{
+          quality.expected_intervals
+        }}
+        интервалов по {{ quality.step_minutes }} мин · покрытие
+        {{ quality.coverage_percent | number: '1.0-1' }}% · максимальный пропуск
+        {{ quality.longest_gap_minutes }} мин
+      </p>
+      @if (quality.missing_intervals > 0) {
+        <p class="notice warning">
+          В наблюдениях есть пропуски. Последние сутки представлены не полностью. Пропуск в конце
+          окна: {{ quality.trailing_gap_minutes }} мин.
+        </p>
+      }
+    }
     @if (expired()) {
       <div class="notice error">
         <div>
